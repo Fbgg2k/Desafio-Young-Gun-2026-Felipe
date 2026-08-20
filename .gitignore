@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+.env
+*.egg-info/
+dist/
+build/
+
+# Banco local gerado pelo CLI
+*.db
+
+# Material de avaliação — não publicar no repo dos candidatos
+INTERNAL.md
+INTERVIEWER_GUIDE.md
+INTERVIEW_SCORECARD.md
+SOLUTION.md
+hidden_tests/
