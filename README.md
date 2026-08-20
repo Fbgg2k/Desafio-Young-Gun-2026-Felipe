@@ -1,4 +1,4 @@
-# Desafio Junior — Aplicar crédito sem duplicar
+# Desafio Young Gun — Aplicar crédito sem duplicar
 
 Este repositório faz parte do processo seletivo. Você vai trabalhar em um serviço Python que **aplica créditos em contas** a partir de eventos enviados por um provedor de pagamentos.
 
@@ -22,7 +22,7 @@ O provedor garante que o `event_id` é estável, mas **não** garante entrega ú
 - depois que o serviço reiniciou (redeploy, crash)
 - **duas vezes ao mesmo tempo**, em threads diferentes
 
-Em nenhum desses casos o cliente pode receber o crédito em dobro. Dinheiro a mais na conta errada é um incidente, não um bug.
+Em nenhum desses casos o cliente pode receber o crédito em dobro. Dinheiro a mais na conta errada é um incidente, não um detalhe.
 
 O saldo fica em um arquivo SQLite (`ledger.db`). O módulo `sqlite3` já vem com o Python — não é preciso instalar nem subir nenhum servidor.
 
