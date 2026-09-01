@@ -47,6 +47,14 @@ def test_duplicate_event_is_ignored_after_restart(database_path):
 
 
 def test_invalid_credit_raises_and_keeps_balance(ledger):
+    # Exemplo de falha original:
+    # Antes da correção, eventos inválidos eram aceitos e o saldo era alterado,
+    # porque a validação não existia e o código só inseria em memória.
+    #
+    # Solução implementada:
+    # - `_validate_credit()` rejeita event_id/account_id vazios
+    # - `amount_cents <= 0` também é rejeitado
+    # - `InvalidCreditError` é levantado sem gravar o evento e sem mexer no saldo
     ledger.apply_credit("evt-valid", "acc-1", 250)
 
     for event_id, account_id, amount in [
@@ -66,6 +74,15 @@ def test_invalid_credit_raises_and_keeps_balance(ledger):
 
 
 def test_concurrent_duplicate_event_is_applied_only_once(database_path):
+    # Exemplo de falha original:
+    # Antes da correção, a deduplicação ficava em um set em memória e não era
+    # persistente nem segura para concorrência em threads. Várias execuções usando
+    # o mesmo event_id podiam aplicar o crédito mais de uma vez.
+    #
+    # Solução implementada:
+    # - o `event_id` é persistido em SQLite como chave primária
+    # - a verificação da duplicidade acontece no banco
+    # - `sqlite3.IntegrityError` é tratado para garantir `applied=False`
     ledger = CreditLedger(database_path)
     barrier = threading.Barrier(8)
     results = []

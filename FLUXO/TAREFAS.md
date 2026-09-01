@@ -317,6 +317,26 @@ Isso cumpre o requisito de que um evento recusado ainda pode ser usado depois, e
 
 Além dos testes já existentes, foram adicionados novos testes em [tests/test_ledger.py](../tests/test_ledger.py) para garantir que a correção realmente cubra os cenários críticos.
 
+### Regra de ouro do red-green para cada teste novo
+
+O README deixa explícito que o teste de concorrência só vale se falhar no código original. Esse requisito deve valer para qualquer teste novo que represente um bug real.
+
+O fluxo correto é:
+
+1. escrever o teste novo
+2. executar `pytest` e confirmar que ele falha no código atual
+3. corrigir a implementação
+4. executar `pytest` novamente e confirmar que o teste passa
+
+Isso é importante porque um teste que passa antes e depois da correção não prova nada. Ele não valida o comportamento problemático.
+
+No nosso caso, o processo foi:
+
+- adicionar o teste de evento inválido e o teste de concorrência
+- confirmar a falha inicial antes da correção
+- corrigir a lógica em [ledger.py](../ledger.py)
+- validar que a suíte ficou verde depois da correção
+
 ### 5.1 Teste de evento inválido
 
 Foi adicionado o teste `test_invalid_credit_raises_and_keeps_balance`.
