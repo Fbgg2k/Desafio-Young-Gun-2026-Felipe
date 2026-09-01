@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS applied_events (
-    event_id     TEXT    NOT NULL,
+    event_id     TEXT    PRIMARY KEY,
     account_id   TEXT    NOT NULL,
     amount_cents INTEGER NOT NULL
 );
@@ -50,21 +50,55 @@ class CreditLedger:
         finally:
             conn.close()
 
+    def _validate_credit(self, event_id: str, account_id: str, amount_cents: int):
+        if event_id is None or not str(event_id).strip():
+            raise InvalidCreditError("event_id is required")
+        if account_id is None or not str(account_id).strip():
+            raise InvalidCreditError("account_id is required")
+        if isinstance(amount_cents, bool) or amount_cents is None:
+            raise InvalidCreditError("amount_cents must be a positive integer")
+
+        normalized = int(amount_cents)
+        if normalized <= 0:
+            raise InvalidCreditError("amount_cents must be greater than zero")
+
+        return str(event_id).strip(), str(account_id).strip(), normalized
+
     def apply_credit(
         self,
         event_id: str,
         account_id: str,
         amount_cents: int,
     ) -> CreditResult:
+        event_id, account_id, amount_cents = self._validate_credit(
+            event_id,
+            account_id,
+            amount_cents,
+        )
+
         if event_id in self._processed_event_ids:
             return CreditResult(applied=False, balance_cents=self.balance(account_id))
 
         with self._transaction() as conn:
-            conn.execute(
-                "INSERT INTO applied_events (event_id, account_id, amount_cents)"
-                " VALUES (?, ?, ?)",
-                (event_id, account_id, amount_cents),
-            )
+            row = conn.execute(
+                "SELECT 1 FROM applied_events WHERE event_id = ?",
+                (event_id,),
+            ).fetchone()
+
+            if row is not None:
+                self._processed_event_ids.add(event_id)
+                return CreditResult(applied=False, balance_cents=self.balance(account_id))
+
+            try:
+                conn.execute(
+                    "INSERT INTO applied_events (event_id, account_id, amount_cents)"
+                    " VALUES (?, ?, ?)",
+                    (event_id, account_id, amount_cents),
+                )
+            except sqlite3.IntegrityError:
+                self._processed_event_ids.add(event_id)
+                return CreditResult(applied=False, balance_cents=self.balance(account_id))
+
             conn.execute(
                 "INSERT OR IGNORE INTO accounts (account_id, balance_cents)"
                 " VALUES (?, 0)",
@@ -77,14 +111,16 @@ class CreditLedger:
             )
 
         self._processed_event_ids.add(event_id)
-
         return CreditResult(applied=True, balance_cents=self.balance(account_id))
 
     def balance(self, account_id: str) -> int:
+        if account_id is None:
+            return 0
+
         with self._transaction() as conn:
             row = conn.execute(
                 "SELECT balance_cents FROM accounts WHERE account_id = ?",
-                (account_id,),
+                (str(account_id).strip(),),
             ).fetchone()
 
         return row[0] if row else 0
