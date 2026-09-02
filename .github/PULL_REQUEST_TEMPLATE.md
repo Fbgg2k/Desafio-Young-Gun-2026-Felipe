@@ -35,3 +35,4 @@ Para descarte foi manter a deduplicação somente em memória e tentar “blinda
 <!-- Cole o link (Loom, YouTube não listado, Google Drive). Não anexe o arquivo no PR. -->
 
 - Link: 
+https://youtu.be/DpLh588R1KY
